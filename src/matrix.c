@@ -4,6 +4,11 @@
 #include "matrix.h"
 
 Matrix* matrix_create(int rows, int cols) {
+    if (rows < 1 || cols < 1) {
+        fprintf(stderr, "matrix_create: invalid dimensions\n");
+        return NULL;
+    }
+
     Matrix *m = (Matrix*)malloc(sizeof(Matrix));
     if (m == NULL) {
         fprintf(stderr, "matrix_create: memory allocation failed\n");
