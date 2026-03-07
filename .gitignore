@@ -35,6 +35,8 @@
 *.i*86
 *.x86_64
 *.hex
+demo
+test_runner
 
 # Debug files
 *.dSYM/
@@ -53,3 +55,9 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# local config
+.vscode/
+compile_commands.json
+.clangd
+.cache
