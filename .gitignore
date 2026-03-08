@@ -37,6 +37,7 @@
 *.hex
 demo
 test_runner
+test_runner_asan
 
 # Debug files
 *.dSYM/
