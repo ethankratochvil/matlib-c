@@ -113,3 +113,46 @@ double matrix_get(const Matrix *m, int i, int j) {
 
     return MAT(m, i, j);
 }
+
+Matrix* matrix_add(const Matrix *m1, const Matrix *m2) {
+    if (m1 == NULL || m2 == NULL) {
+        fprintf(stderr, "matrix_add: passed NULL\n");
+        return NULL;
+    }
+
+    if (m1->rows != m2->rows || m1->cols != m2->cols) {
+        fprintf(stderr, "matrix_add: dimensions do not match\n");
+        return NULL;
+    }
+
+    Matrix *m = matrix_create(m1->rows, m1->cols);
+    if (m == NULL) return NULL;
+
+    for (int i = 0; i < (m->rows * m->cols); i++) {
+        m->data[i] = m1->data[i] + m2->data[i];
+    }
+
+    return m;
+}
+
+Matrix* matrix_scale(const Matrix *m, double scalar) {
+    if (m == NULL) {
+        fprintf(stderr, "matrix_scale: passed NULL\n");
+        return NULL;
+    }
+
+    Matrix *scaled_m = matrix_copy(m);
+    if (scaled_m == NULL) return NULL;
+
+    for (int i = 0; i < (scaled_m->rows * scaled_m->cols); i++) {
+        scaled_m->data[i] *= scalar;
+    }
+
+    return scaled_m;
+}
+
+// Matrix* matrix_transpose(const Matrix *m);
+
+// Matrix* matrix_multiply(const Matrix *m1, const Matrix *m2);
+
+// Matrix* matrix_identity(int n);

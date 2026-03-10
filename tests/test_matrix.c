@@ -171,6 +171,132 @@ void test_get_high_col() {
     matrix_free(m);
 }
 
+void test_add_null_m1() {
+    Matrix *m1 = NULL;
+    Matrix *m2 = matrix_create(2, 2);
+
+    Matrix *sum = matrix_add(m1, m2);
+    ASSERT(sum == NULL, "add: returns NULL when passed NULL");
+
+    matrix_free(m2);
+}
+
+void test_add_null_m2() {
+    Matrix *m1 = matrix_create(2, 2);
+    Matrix *m2 = NULL;
+
+    Matrix *sum = matrix_add(m1, m2);
+    ASSERT(sum == NULL, "add: returns NULL when passed NULL");
+    
+    matrix_free(m1);
+}
+
+void test_add_diff_rows() {
+    Matrix *m1 = matrix_create(2, 2);
+    Matrix *m2 = matrix_create(3, 2);
+
+    Matrix *sum = matrix_add(m1, m2);
+    ASSERT(sum == NULL, "add: returns NULL when rows unequal");
+
+    matrix_free(m1);
+    matrix_free(m2);
+}
+
+void test_add_diff_cols() {
+    Matrix *m1 = matrix_create(2, 2);
+    Matrix *m2 = matrix_create(2, 3);
+
+    Matrix *sum = matrix_add(m1, m2);
+    ASSERT(sum == NULL, "add: returns NULL when cols unequal");
+
+    matrix_free(m1);
+    matrix_free(m2);
+}
+
+void test_add_full() {
+    Matrix *m1 = matrix_create(2, 2);
+    Matrix *m2 = matrix_create(2, 2);
+
+    matrix_set(m1, 0, 0, 1);
+    matrix_set(m1, 0, 1, 2);
+    matrix_set(m1, 1, 0, 3);
+    matrix_set(m1, 1, 1, 4);
+
+    matrix_set(m2, 0, 0, 5);
+    matrix_set(m2, 0, 1, 6);
+    matrix_set(m2, 1, 0, 7);
+    matrix_set(m2, 1, 1, 8);
+
+    Matrix *sum = matrix_add(m1, m2);
+    int is_sum= 1;
+
+    for (int i = 0; i < 4; i++) {
+        if (fabs(sum->data[i] - (m1->data[i] + m2->data[i])) >= EPSILON) {
+            is_sum = 0;
+        }
+    }
+
+    ASSERT(is_sum, "add: properly adds elements of matrices");
+
+    matrix_free(m1);
+    matrix_free(m2);
+    matrix_free(sum);
+}
+
+void test_scale_null() {
+    Matrix *m = NULL;
+    double scalar = 3.00;
+
+    Matrix *scaled_m = matrix_scale(m, scalar);
+    ASSERT(scaled_m == NULL, "scale: returns NULL when passed NULL");
+}
+
+void test_scale_zero() {
+    Matrix *m = matrix_create(2, 2);
+    double scalar = 0;
+
+    matrix_set(m, 0, 0, 1);
+    matrix_set(m, 0, 1, 2);
+    matrix_set(m, 1, 0, 3);
+    matrix_set(m, 1, 1, 4);
+
+    Matrix *scaled_m = matrix_scale(m, scalar);
+    int is_scaled = 1;
+
+    for (int i = 0; i < (scaled_m->rows * scaled_m->cols); i++) {
+        if (fabs(scaled_m->data[i] - (m->data[i] * scalar)) >= EPSILON) {
+            is_scaled = 0;
+        }
+    }
+
+    ASSERT(is_scaled, "scale: scaled matrix properly");
+    matrix_free(m);
+    matrix_free(scaled_m);
+}
+
+void test_scale_full() {
+    Matrix *m = matrix_create(2, 2);
+    double scalar = 3.14;
+
+    matrix_set(m, 0, 0, 1);
+    matrix_set(m, 0, 1, 2);
+    matrix_set(m, 1, 0, 3);
+    matrix_set(m, 1, 1, 4);
+
+    Matrix *scaled_m = matrix_scale(m, scalar);
+    int is_scaled = 1;
+
+    for (int i = 0; i < (scaled_m->rows * scaled_m->cols); i++) {
+        if (fabs(scaled_m->data[i] - (m->data[i] * scalar)) >= EPSILON) {
+            is_scaled = 0;
+        }
+    }
+
+    ASSERT(is_scaled, "scale: scaled matrix properly");
+    matrix_free(m);
+    matrix_free(scaled_m);
+}
+
 int main() {
     test_create_basic();
     test_create_zero_rows();
@@ -191,6 +317,14 @@ int main() {
     test_get_high_row();
     test_get_high_col();
     test_print_visual();
+    test_add_null_m1();
+    test_add_null_m2();
+    test_add_diff_rows();
+    test_add_diff_cols();
+    test_add_full();
+    test_scale_null();
+    test_scale_zero();
+    test_scale_full();
 
     printf("\n%d passed, %d failed\n", tests_passed, tests_failed);
     return tests_failed > 0 ? 1 : 0;
