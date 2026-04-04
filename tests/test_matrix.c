@@ -297,6 +297,118 @@ void test_scale_full() {
     matrix_free(scaled_m);
 }
 
+void test_transpose_null() {
+    Matrix *m = NULL;
+
+    Matrix *m_transpose = matrix_transpose(m);
+    ASSERT(m_transpose == NULL, "transpose: returns NULL when passed NULL");
+}
+
+void test_transpose_visual() {
+    Matrix *m = matrix_create(3, 3);
+
+    for (int i = 0; i < m->rows * m->cols; i++) {
+        m->data[i] = i + 1;
+    }
+
+    Matrix *m_transpose = matrix_transpose(m);
+    
+    printf("tranpose: Original matrix\n");
+    matrix_print(m);
+
+    printf("transpose: Transposed matrix\n");
+    matrix_print(m_transpose);
+
+    matrix_free(m);
+    matrix_free(m_transpose);
+}
+
+void test_transpose_full() {
+    Matrix *m = matrix_create(3, 2);
+
+    MAT(m, 0, 0) = 3;
+    MAT(m, 0, 1) = 5;
+    MAT(m, 1, 0) = 4;
+    MAT(m, 1, 1) = 8;
+    MAT(m, 2, 0) = 1;
+    MAT(m, 2, 1) = 5;
+
+    Matrix *m_transpose = matrix_transpose(m);
+
+    int is_transposed = 1;
+
+    for (int i = 0; i < m_transpose->rows; i++) {
+        for (int j = 0; j < m_transpose->cols; j++) {
+            if (MAT(m_transpose, i, j) - MAT(m, j, i) > EPSILON) {
+                is_transposed = 0;
+            }
+        }
+    }
+
+    ASSERT(is_transposed, "transpose: matrix correctly transposed");
+    matrix_free(m);
+    matrix_free(m_transpose);
+}
+
+void test_multiply_null() {
+    Matrix *m1 = NULL;
+    Matrix *m2 = NULL;
+
+    Matrix* m_product = matrix_multiply(m1, m2);
+    ASSERT(m_product == NULL, "multiply: returns NULL when passed NULL");
+}
+
+void test_multiply_dim() {
+    Matrix *m1 = matrix_create(3, 4);
+    Matrix *m2 = matrix_create(2, 3);
+
+    Matrix *m_product = matrix_multiply(m1, m2);
+    ASSERT(m_product == NULL, "multiply: returns NULL with non-matching dimensions");
+
+    matrix_free(m1);
+    matrix_free(m2);
+}
+
+void test_multiply_full() {
+    Matrix *m1 = matrix_create(2, 2);
+    Matrix *m2 = matrix_create(2, 1);
+
+    for (int i = 0; i < m1->rows * m1->cols; i++) {
+        m1->data[i] = i + 1;
+    }
+
+    MAT(m2, 0, 0) = 5;
+    MAT(m2, 1, 0) = 2;
+
+    Matrix *m_product = matrix_multiply(m1, m2);
+
+    int dims_correct = m_product->rows == m1->rows && m_product->cols == m2->cols;
+    int vals_correct = MAT(m_product, 0, 0) - 9.00 < EPSILON && MAT(m_product, 1, 0) - 23.00 < EPSILON;
+    ASSERT(dims_correct && vals_correct, "multiply: correctly multiplied matrices");
+
+    matrix_free(m1);
+    matrix_free(m2);
+    matrix_free(m_product);
+}
+
+void test_identity_dim() {
+    Matrix *I = matrix_identity(-1);
+    ASSERT(I == NULL, "identity: returns NULL with bad n");
+}
+
+void test_identity_full() {
+    Matrix *I = matrix_identity(3);
+
+    int is_one = 1;
+
+    for (int i = 0; i < 3; i++) {
+        if (MAT(I, i, i) - 1.00 > EPSILON) is_one = 0;
+    }
+
+    ASSERT(is_one, "identity: ones on diagonal");
+    matrix_free(I);
+}
+
 int main() {
     test_create_basic();
     test_create_zero_rows();
@@ -325,6 +437,14 @@ int main() {
     test_scale_null();
     test_scale_zero();
     test_scale_full();
+    test_transpose_null();
+    test_transpose_visual();
+    test_transpose_full();
+    test_multiply_null();
+    test_multiply_dim();
+    test_multiply_full();
+    test_identity_dim();
+    test_identity_full();
 
     printf("\n%d passed, %d failed\n", tests_passed, tests_failed);
     return tests_failed > 0 ? 1 : 0;

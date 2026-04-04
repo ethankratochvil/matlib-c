@@ -151,8 +151,65 @@ Matrix* matrix_scale(const Matrix *m, double scalar) {
     return scaled_m;
 }
 
-// Matrix* matrix_transpose(const Matrix *m);
+Matrix* matrix_transpose(const Matrix *m) {
+    if (m == NULL) {
+        fprintf(stderr, "matrix_transpose: passed NULL\n");
+        return NULL;
+    }
 
-// Matrix* matrix_multiply(const Matrix *m1, const Matrix *m2);
+    Matrix *m_transpose = matrix_create(m->cols, m->rows);
+    if (m_transpose == NULL) return NULL;
 
-// Matrix* matrix_identity(int n);
+    for (int i = 0; i < m->rows; i++) {
+        for (int j = 0; j < m->cols; j++) {
+            MAT(m_transpose, j, i) = MAT(m, i, j);
+        }
+    }
+
+    return m_transpose;
+}
+
+Matrix* matrix_multiply(const Matrix *m1, const Matrix *m2) {
+    if (m1 == NULL || m2 == NULL) {
+        fprintf(stderr, "matrix_multiply: passed NULL\n");
+        return NULL;
+    }
+
+    if (m1->cols != m2->rows) {
+        fprintf(stderr, "matrix_multiply: dimensions do not agree\n");
+        return NULL;
+    }
+
+    Matrix *m_product = matrix_create(m1->rows, m2->cols);
+    if (m_product == NULL) return NULL;
+
+    double m1_val; // value in m1 being multiplied
+
+    for (int i = 0; i < m_product->rows; i++) {
+        for (int k = 0; k < m1->cols; k++) {
+            m1_val = MAT(m1, i, k);
+
+            for (int j = 0; j < m_product->cols; j++) {
+                MAT(m_product, i, j) += m1_val * MAT(m2, k, j);
+            }
+        }
+    }
+
+    return m_product;
+}
+
+Matrix* matrix_identity(int n) {
+    if (n < 1) {
+        fprintf(stderr, "matrix_identity: impossible dimensions\n");
+        return NULL;
+    }
+
+    Matrix *m_identity = matrix_create(n, n);
+    if (m_identity == NULL) return NULL;
+
+    for (int i = 0; i < n; i++) {
+        MAT(m_identity, i, i) = 1;
+    }
+
+    return m_identity;
+}

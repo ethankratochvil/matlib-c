@@ -38,13 +38,15 @@ Matrix* matrix_add(const Matrix *m1, const Matrix *m2);
 // Multiplies matrix by a scalar. Returns new matrix.
 Matrix* matrix_scale(const Matrix *m, double scalar);
 
-// Returns transposed matrix.
-// Matrix* matrix_transpose(const Matrix *m);
+// Returns transposed matrix or NULL on failure.
+Matrix* matrix_transpose(const Matrix *m);
 
 // Multiplies two matrices. Dimensions are checked.
-// Matrix* matrix_multiply(const Matrix *m1, const Matrix *m2);
+// Returns product matrix or NULL on failure.
+Matrix* matrix_multiply(const Matrix *m1, const Matrix *m2);
 
 // Returns identity matrix; square with 1's on diagonal.
-// Matrix* matrix_identity(int n);
+// Returns NULL on failure.
+Matrix* matrix_identity(int n);
 
 #endif
