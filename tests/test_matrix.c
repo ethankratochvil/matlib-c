@@ -243,6 +243,78 @@ void test_add_full() {
     matrix_free(sum);
 }
 
+void test_subtract_null_m1() {
+    Matrix *m1 = NULL;
+    Matrix *m2 = matrix_create(2, 2);
+
+    Matrix *diff = matrix_subtract(m1, m2);
+    ASSERT(diff == NULL, "subtract: returns NULL when passed NULL");
+
+    matrix_free(m2);
+}
+
+void test_subtract_null_m2() {
+    Matrix *m1 = matrix_create(2, 2);
+    Matrix *m2 = NULL;
+
+    Matrix *diff = matrix_subtract(m1, m2);
+    ASSERT(diff == NULL, "subtract: returns NULL when passed NULL");
+    
+    matrix_free(m1);
+}
+
+void test_subtract_diff_rows() {
+    Matrix *m1 = matrix_create(2, 2);
+    Matrix *m2 = matrix_create(3, 2);
+
+    Matrix *diff = matrix_subtract(m1, m2);
+    ASSERT(diff == NULL, "subtract: returns NULL when rows unequal");
+
+    matrix_free(m1);
+    matrix_free(m2);
+}
+
+void test_subtract_diff_cols() {
+    Matrix *m1 = matrix_create(2, 2);
+    Matrix *m2 = matrix_create(2, 3);
+
+    Matrix *diff = matrix_subtract(m1, m2);
+    ASSERT(diff == NULL, "subtract: returns NULL when cols unequal");
+
+    matrix_free(m1);
+    matrix_free(m2);
+}
+
+void test_subtract_full() {
+    Matrix *m1 = matrix_create(2, 2);
+    Matrix *m2 = matrix_create(2, 2);
+
+    matrix_set(m1, 0, 0, 3);
+    matrix_set(m1, 0, 1, 9);
+    matrix_set(m1, 1, 0, 2);
+    matrix_set(m1, 1, 1, 4);
+
+    matrix_set(m2, 0, 0, 5);
+    matrix_set(m2, 0, 1, 6);
+    matrix_set(m2, 1, 0, -1);
+    matrix_set(m2, 1, 1, 3);
+
+    Matrix *diff = matrix_subtract(m1, m2);
+    int is_diff = 1;
+
+    for (int i = 0; i < 4; i++) {
+        if (fabs(diff->data[i] - (m1->data[i] - m2->data[i])) >= EPSILON) {
+            is_diff = 0;
+        }
+    }
+
+    ASSERT(is_diff, "subtract: properly subtracts elements of matrices");
+
+    matrix_free(m1);
+    matrix_free(m2);
+    matrix_free(diff);
+}
+
 void test_scale_null() {
     Matrix *m = NULL;
     double scalar = 3.00;
@@ -434,6 +506,11 @@ int main() {
     test_add_diff_rows();
     test_add_diff_cols();
     test_add_full();
+    test_subtract_null_m1();
+    test_subtract_null_m2();
+    test_subtract_diff_rows();
+    test_subtract_diff_cols();
+    test_subtract_full();
     test_scale_null();
     test_scale_zero();
     test_scale_full();

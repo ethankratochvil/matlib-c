@@ -35,6 +35,9 @@ double matrix_get(const Matrix *m, int i, int j);
 // Adds each element together. Dimensions are checked.
 Matrix* matrix_add(const Matrix *m1, const Matrix *m2);
 
+// Subtracts elements in m2 from m1. Dimensions are checked.
+Matrix* matrix_subtract(const Matrix *m1, const Matrix *m2);
+
 // Multiplies matrix by a scalar. Returns new matrix.
 Matrix* matrix_scale(const Matrix *m, double scalar);
 

@@ -135,6 +135,27 @@ Matrix* matrix_add(const Matrix *m1, const Matrix *m2) {
     return m;
 }
 
+Matrix* matrix_subtract(const Matrix *m1, const Matrix *m2) {
+    if (m1 == NULL || m2 == NULL) {
+        fprintf(stderr, "matrix_subtract: passed NULL\n");
+        return NULL;
+    }
+
+    if (m1->rows != m2->rows || m1->cols != m2->cols) {
+        fprintf(stderr, "matrix_subtract: dimensions do not match\n");
+        return NULL;
+    }
+
+    Matrix *m = matrix_create(m1->rows, m1->cols);
+    if (m == NULL) return NULL;
+
+    for (int i = 0; i < (m->rows * m->cols); i++) {
+        m->data[i] = m1->data[i] - m2->data[i];
+    }
+
+    return m;
+}
+
 Matrix* matrix_scale(const Matrix *m, double scalar) {
     if (m == NULL) {
         fprintf(stderr, "matrix_scale: passed NULL\n");
