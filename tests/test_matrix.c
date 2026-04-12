@@ -411,7 +411,7 @@ void test_transpose_full() {
 
     for (int i = 0; i < m_transpose->rows; i++) {
         for (int j = 0; j < m_transpose->cols; j++) {
-            if (MAT(m_transpose, i, j) - MAT(m, j, i) > EPSILON) {
+            if (fabs(MAT(m_transpose, i, j) - MAT(m, j, i)) > EPSILON) {
                 is_transposed = 0;
             }
         }
@@ -455,7 +455,7 @@ void test_multiply_full() {
     Matrix *m_product = matrix_multiply(m1, m2);
 
     int dims_correct = m_product->rows == m1->rows && m_product->cols == m2->cols;
-    int vals_correct = MAT(m_product, 0, 0) - 9.00 < EPSILON && MAT(m_product, 1, 0) - 23.00 < EPSILON;
+    int vals_correct = fabs(MAT(m_product, 0, 0) - 9.00) < EPSILON && fabs(MAT(m_product, 1, 0) - 23.00) < EPSILON;
     ASSERT(dims_correct && vals_correct, "multiply: correctly multiplied matrices");
 
     matrix_free(m1);
@@ -474,11 +474,373 @@ void test_identity_full() {
     int is_one = 1;
 
     for (int i = 0; i < 3; i++) {
-        if (MAT(I, i, i) - 1.00 > EPSILON) is_one = 0;
+        if (fabs(MAT(I, i, i) - 1.00) > EPSILON) is_one = 0;
     }
 
     ASSERT(is_one, "identity: ones on diagonal");
     matrix_free(I);
+}
+
+void test_is_square_null() {
+    Matrix *m = NULL;
+
+    ASSERT(matrix_is_square(m) == 0, "is_square: returns 0 when passed NULL");
+}
+
+void test_is_square_false() {
+    Matrix *m = matrix_create(2, 3);
+
+    ASSERT(matrix_is_square(m) == 0, "is_square: identifies non-square");
+    matrix_free(m);
+}
+
+void test_is_square_true() {
+    Matrix *m = matrix_create(3, 3);
+
+    ASSERT(matrix_is_square(m) == 1, "is_square: identifies square");
+    matrix_free(m);
+}
+
+void test_trace_null() {
+    Matrix *m = NULL;
+
+    ASSERT(fabs(matrix_trace(m)) < EPSILON, "trace: returns 0 when passed NULL");
+}
+
+void test_trace_not_sqaure() {
+    Matrix *m = matrix_create(2, 3);
+
+    ASSERT(fabs(matrix_trace(m)) < EPSILON, "trace: returns 0 when not square");
+    matrix_free(m);
+}
+
+void test_trace_full() {
+    Matrix *m = matrix_create(3, 3);
+
+    matrix_set(m, 0, 0, 4);
+    matrix_set(m, 0, 1, 9);
+    matrix_set(m, 0, 2, 12);
+    matrix_set(m, 1, 0, 3);
+    matrix_set(m, 1, 1, 10);
+    matrix_set(m, 1, 2, 2);
+    matrix_set(m, 2, 0, 8);
+    matrix_set(m, 2, 1, 1);
+    matrix_set(m, 2, 2, 6);
+
+    double trace = matrix_trace(m);
+    double test_trace = MAT(m, 0, 0) + MAT(m, 1, 1) + MAT(m, 2, 2);
+
+    ASSERT(fabs(trace - test_trace) < EPSILON, "trace: returns trace value");
+    matrix_free(m);
+}
+
+void test_rref_null() {
+    Matrix *m = NULL;
+    Matrix *m_rref = matrix_rref(m);
+
+    ASSERT(m_rref == NULL, "rref: returns NULL when passed NULL");
+}
+
+void test_rref_1x1() {
+    Matrix *m = matrix_create(1, 1);
+    matrix_set(m, 0, 0, 25.22);
+
+    Matrix *m_rref = matrix_rref(m);
+
+    ASSERT(fabs(matrix_get(m_rref, 0, 0) - 1.00) < EPSILON, "rref: 1x1 matrix");
+    matrix_free(m);
+    matrix_free(m_rref);
+}
+
+void test_rref_identity() {
+    Matrix *m = matrix_identity(3);
+    Matrix *m_rref = matrix_rref(m);
+
+    int is_identity = 1;
+
+    for (int i = 0; i < 3; i++) {
+        if(fabs(MAT(m_rref, i, i) - 1.00) >= EPSILON) {
+            is_identity = 0;
+        }
+    }
+
+    ASSERT(is_identity, "rref: identity stays identity");
+    matrix_free(m);
+    matrix_free(m_rref);
+}
+
+void test_rref_2x2() {
+    Matrix *m = matrix_create(2, 2);
+
+    matrix_set(m, 0, 0, 23);
+    matrix_set(m, 0, 1, 2);
+    matrix_set(m, 1, 0, 12);
+    matrix_set(m, 1, 1, 5);
+
+    Matrix *m_rref = matrix_rref(m);
+
+    int is_rref = 1;
+    if (fabs(MAT(m_rref, 0, 0) - 1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 0, 1)) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 1) - 1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 0)) >= EPSILON
+    ) is_rref = 0;
+
+    ASSERT(is_rref, "rref: simple 2x2");
+    matrix_free(m);
+    matrix_free(m_rref);
+}
+
+void test_rref_already() {
+    Matrix *m = matrix_create(2, 3);
+
+    matrix_set(m, 0, 0, 1);
+    matrix_set(m, 0, 1, 0);
+    matrix_set(m, 0, 2, 3);
+    matrix_set(m, 1, 0, 0);
+    matrix_set(m, 1, 1, 1);
+    matrix_set(m, 1, 2, 2);
+
+    Matrix *m_rref = matrix_rref(m);
+
+    int is_rref = 1;
+    if (fabs(MAT(m_rref, 0, 0) - 1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 0, 1)) >= EPSILON ||
+        fabs(MAT(m_rref, 0, 2) - 3.00) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 0)) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 1) - 1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 2) - 2.00) >= EPSILON
+    ) is_rref = 0;
+
+    ASSERT(is_rref, "rref: already in rref");
+    matrix_free(m);
+    matrix_free(m_rref);
+}
+
+void test_rref_swap() {
+    Matrix *m = matrix_create(2, 2);
+
+    matrix_set(m, 0, 0, 3);
+    matrix_set(m, 0, 1, 5);
+    matrix_set(m, 1, 0, 6);
+    matrix_set(m, 1, 1, 7);
+
+    Matrix *m_rref = matrix_rref(m);
+
+    int is_rref = 1;
+    if (fabs(MAT(m_rref, 0, 0) - 1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 0, 1)) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 0)) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 1) - 1.00) >= EPSILON
+    ) is_rref = 0;
+
+    ASSERT(is_rref, "rref: requires row swap");
+    matrix_free(m);
+    matrix_free(m_rref);
+}
+
+void test_rref_rank_def() {
+    Matrix *m = matrix_create(3, 3);
+
+    matrix_set(m, 0, 0, 1);
+    matrix_set(m, 0, 1, 2);
+    matrix_set(m, 0, 2, 3);
+    matrix_set(m, 1, 0, 4);
+    matrix_set(m, 1, 1, 5);
+    matrix_set(m, 1, 2, 6);
+    matrix_set(m, 2, 0, 5);
+    matrix_set(m, 2, 1, 7);
+    matrix_set(m, 2, 2, 9);
+
+    Matrix *m_rref = matrix_rref(m);
+
+    int is_rref = 1;
+    if (fabs(MAT(m_rref, 0, 0) - 1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 0, 1)) >= EPSILON ||
+        fabs(MAT(m_rref, 0, 2) - -1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 0)) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 1) - 1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 2) - 2.00) >= EPSILON ||
+        fabs(MAT(m_rref, 2, 0)) >= EPSILON ||
+        fabs(MAT(m_rref, 2, 1)) >= EPSILON ||
+        fabs(MAT(m_rref, 2, 2)) >= EPSILON
+    ) is_rref = 0;
+
+    ASSERT(is_rref, "rref: rank-deficient 3x3");
+    matrix_free(m);
+    matrix_free(m_rref);
+}
+
+void test_rref_wide() {
+    Matrix *m = matrix_create(2, 4);
+
+    matrix_set(m, 0, 0, 2);
+    matrix_set(m, 0, 1, -3);
+    matrix_set(m, 0, 2, 1);
+    matrix_set(m, 0, 3, -1);
+    matrix_set(m, 1, 0, 1);
+    matrix_set(m, 1, 1, 1);
+    matrix_set(m, 1, 2, -2);
+    matrix_set(m, 1, 3, 1);
+
+    Matrix *m_rref = matrix_rref(m);
+
+    int is_rref = 1;
+    if (fabs(MAT(m_rref, 0, 0) - 1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 0, 1)) >= EPSILON ||
+        fabs(MAT(m_rref, 0, 2) - -1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 0, 3) - 0.4) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 0)) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 1) - 1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 2) - -1.00) >= EPSILON ||
+        fabs(MAT(m_rref, 1, 3) - 0.6) >= EPSILON
+    ) is_rref = 0;
+
+    ASSERT(is_rref, "rref: wide matrix 2x4");
+    matrix_free(m);
+    matrix_free(m_rref);
+}
+
+void test_rref_zeros() {
+    Matrix *m = matrix_create(2, 2);
+
+    Matrix *m_rref = matrix_rref(m);
+
+    int is_rref = 1;
+    for (int i = 0; i < m_rref->rows * m_rref->cols; i++) {
+        if (fabs(m_rref->data[i]) >= EPSILON) {
+            is_rref = 0;
+        }
+    }
+
+    ASSERT(is_rref, "rref: all zeros");
+    matrix_free(m);
+    matrix_free(m_rref);
+}
+
+void test_det_null() {
+    Matrix *m = NULL;
+
+    double det = matrix_det(m);
+
+    ASSERT(fabs(det) < EPSILON, "det: passed NULL");
+}
+
+void test_det_non_square() {
+    Matrix *m = matrix_create(2, 3);
+
+    double det = matrix_det(m);
+
+    ASSERT(fabs(det) < EPSILON, "det: passed non-square");
+    matrix_free(m);
+}
+
+void test_det_1x1() {
+    Matrix *m = matrix_create(1, 1);
+
+    matrix_set(m, 0, 0, 7.00);
+
+    double det = matrix_det(m);
+
+    ASSERT(fabs(det - 7.00) < EPSILON, "det: 1x1");
+    matrix_free(m);
+}
+
+void test_det_2x2() {
+    Matrix *m = matrix_create(2, 2);
+
+    matrix_set(m, 0, 0, 4);
+    matrix_set(m, 0, 1, 3);
+    matrix_set(m, 1, 0, 1);
+    matrix_set(m, 1, 1, 2);
+
+    double det = matrix_det(m);
+
+    ASSERT(fabs(det - 5.0) < EPSILON, "det: simple 2x2");
+    matrix_free(m);
+}
+
+void test_det_singular() {
+    Matrix *m = matrix_create(3, 3);
+
+    matrix_set(m, 0, 0, 1);
+    matrix_set(m, 0, 1, 2);
+    matrix_set(m, 0, 2, 3);
+    matrix_set(m, 1, 0, 4);
+    matrix_set(m, 1, 1, 5);
+    matrix_set(m, 1, 2, 6);
+    matrix_set(m, 2, 0, 5);
+    matrix_set(m, 2, 1, 7);
+    matrix_set(m, 2, 2, 9);
+
+    double det = matrix_det(m);
+
+    ASSERT(fabs(det) < EPSILON, "det: singular matrix");
+    matrix_free(m);
+}
+
+void test_det_negative() {
+    Matrix *m = matrix_create(3, 3);
+
+    matrix_set(m, 0, 0, 4);
+    matrix_set(m, 0, 1, 1);
+    matrix_set(m, 0, 2, 1);
+    matrix_set(m, 1, 0, 2);
+    matrix_set(m, 1, 1, 5);
+    matrix_set(m, 1, 2, 2);
+    matrix_set(m, 2, 0, 1);
+    matrix_set(m, 2, 1, 1);
+    matrix_set(m, 2, 2, -1);
+
+    double det = matrix_det(m);
+
+    ASSERT(fabs(det - -27.00) < EPSILON, "det: negative determinant");
+    matrix_free(m);
+}
+
+void test_det_swap() {
+    Matrix *m = matrix_create(3, 3);
+
+    matrix_set(m, 0, 0, 1);
+    matrix_set(m, 0, 1, 5);
+    matrix_set(m, 0, 2, 1);
+    matrix_set(m, 1, 0, 2);
+    matrix_set(m, 1, 1, 1);
+    matrix_set(m, 1, 2, 1);
+    matrix_set(m, 2, 0, 10);
+    matrix_set(m, 2, 1, 1);
+    matrix_set(m, 2, 2, 1);
+
+    double det = matrix_det(m);
+
+    ASSERT(fabs(det - 32.00) < EPSILON, "det: with swaps");
+    matrix_free(m);
+}
+
+void test_det_4x4() {
+    Matrix *m = matrix_create(4, 4);
+
+    matrix_set(m, 0, 0, 2);
+    matrix_set(m, 0, 1, 1);
+    matrix_set(m, 0, 2, 3);
+    matrix_set(m, 0, 3, 4);
+    matrix_set(m, 1, 0, 0);
+    matrix_set(m, 1, 1, -1);
+    matrix_set(m, 1, 2, 2);
+    matrix_set(m, 1, 3, 1);
+    matrix_set(m, 2, 0, 3);
+    matrix_set(m, 2, 1, 2);
+    matrix_set(m, 2, 2, 0);
+    matrix_set(m, 2, 3, 5);
+    matrix_set(m, 3, 0, -1);
+    matrix_set(m, 3, 1, 3);
+    matrix_set(m, 3, 2, 2);
+    matrix_set(m, 3, 3, 1);
+
+    double det = matrix_det(m);
+
+    ASSERT(fabs(det - 35.00) < EPSILON, "det: 4x4");
+    matrix_free(m);
 }
 
 int main() {
@@ -522,6 +884,29 @@ int main() {
     test_multiply_full();
     test_identity_dim();
     test_identity_full();
+    test_is_square_null();
+    test_is_square_false();
+    test_is_square_true();
+    test_trace_null();
+    test_trace_not_sqaure();
+    test_trace_full();
+    test_rref_null();
+    test_rref_1x1();
+    test_rref_2x2();
+    test_rref_identity();
+    test_rref_already();
+    test_rref_swap();
+    test_rref_wide();
+    test_rref_rank_def();
+    test_rref_zeros();
+    test_det_null();
+    test_det_1x1();
+    test_det_non_square();
+    test_det_singular();
+    test_det_2x2();
+    test_det_negative();
+    test_det_swap();
+    test_det_4x4();
 
     printf("\n%d passed, %d failed\n", tests_passed, tests_failed);
     return tests_failed > 0 ? 1 : 0;

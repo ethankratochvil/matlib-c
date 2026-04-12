@@ -1,7 +1,50 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "matrix.h"
+
+#define EPSILON 1e-9
+
+static void row_swap(Matrix *m, int r1, int r2) {
+    if (m == NULL) return;
+    else if (r1 == r2) return;
+    else if (r1 < 0 || r1 > m->rows - 1 || r2 < 0 || r2 > m->rows - 1) return;
+
+    double temp;
+    for (int i = 0; i < m->cols; i++) {
+        temp = MAT(m, r1, i);
+        MAT(m, r1, i) = MAT(m, r2, i);
+        MAT(m, r2, i) = temp;
+    }
+}
+
+static void row_scale(Matrix *m, int row, double scalar) {
+    if (m == NULL) return;
+    else if (row < 0 || row > m->rows - 1) return;
+
+    for (int i = 0; i < m->cols; i++) {
+        MAT(m, row, i) *= scalar;
+    }
+}
+
+static void row_add_scaled(Matrix *m, int target, int source, double scalar) {
+    if (m == NULL) return;
+    else if (target == source) return;
+    else if (target < 0 || target > m->rows - 1 || source < 0 || source > m->rows - 1) return;
+    else if (scalar == 0.0) return;
+
+    for (int i = 0; i < m->cols; i++) {
+        MAT(m, target, i) += scalar * MAT(m, source, i);
+    }
+}
+
+static double det_2x2(const Matrix *m) {
+    if (m == NULL) return 0.0;
+    if (!matrix_is_square(m) || (m->rows != 2)) return 0.0;
+
+    return MAT(m, 0, 0) * MAT(m, 1, 1) - MAT(m, 0, 1) * MAT(m, 1, 0);
+}
 
 Matrix* matrix_create(int rows, int cols) {
     if (rows < 1 || cols < 1) {
@@ -15,7 +58,7 @@ Matrix* matrix_create(int rows, int cols) {
         return NULL;
     }
 
-    double *m_data = (double*)malloc(sizeof(double) * (rows * cols));
+    double *m_data = calloc((size_t)rows * cols, sizeof(*m_data));
     if (m_data == NULL) {
         fprintf(stderr, "matrix_create: memory allocation failed\n");
         free(m);
@@ -25,10 +68,6 @@ Matrix* matrix_create(int rows, int cols) {
     m->rows = rows;
     m->cols = cols;
     m->data = m_data;
-
-    for (int i = 0; i < (rows * cols); i++) {
-        m->data[i] = 0;
-    }
 
     return m;
 }
@@ -233,4 +272,151 @@ Matrix* matrix_identity(int n) {
     }
 
     return m_identity;
+}
+
+int matrix_is_square(const Matrix *m) {
+    if (m == NULL) {
+        fprintf(stderr, "matrix_is_square: passed NULL\n");
+        return 0;
+    }
+
+    if (m->rows == m->cols) return 1;
+    else return 0;
+}
+
+double matrix_trace(const Matrix *m) {
+    if (m == NULL) {
+        fprintf(stderr, "matrix_trace: passed NULL\n");
+        return 0;
+    }
+
+    if (!matrix_is_square(m)) {
+        fprintf(stderr, "matrix_trace: matrix is not square\n");
+        return 0;
+    }
+
+    double trace = 0;
+
+    for (int i = 0; i < m->rows; i++) {
+        trace += MAT(m, i, i);
+    }
+
+    return trace;
+}
+
+Matrix* matrix_rref(const Matrix *m) {
+    if (m == NULL) {
+        fprintf(stderr, "matrix_rref: passed NULL\n");
+        return NULL;
+    }
+
+    Matrix* m_rref = matrix_copy(m);
+    if (m_rref == NULL) return NULL;
+
+    int pivot_row, row, col;
+    double pivot_val;
+
+    // tracking which column each pivot landed in
+    int *pivot_cols = (int*)malloc(sizeof(int) * m_rref->rows);
+    for (int i = 0; i < m_rref->rows; i++) pivot_cols[i] = -1;
+
+    for (col = 0, row = 0; col < m_rref->cols && row < m_rref->rows; col++) {
+        // Finding pivot, otherwise assume it's in current row
+        pivot_row = row;
+        pivot_val = 0.0;
+
+        for (int i = row; i < m_rref->rows; i++) {
+            if (fabs(MAT(m_rref, i, col)) > fabs(pivot_val)) {
+                pivot_val = MAT(m_rref, i, col);
+                pivot_row = i;
+            }
+        }
+
+        if(fabs(pivot_val) < EPSILON) continue;
+
+        row_swap(m_rref, row, pivot_row);
+        row_scale(m_rref, row, 1.0 / MAT(m_rref, row, col));
+
+        // Gaussian elimination
+        for (int i = row + 1; i < m_rref->rows; i++) {
+            row_add_scaled(m_rref, i, row, -MAT(m_rref, i, col));
+        }
+
+        pivot_cols[row] = col;
+        row++;
+    }
+
+    for (int i = row - 1; i > 0; i--) {
+        int pivot_col = pivot_cols[i];
+        if (pivot_col == -1) continue; // no pivot in this row
+
+        for (int k = i - 1; k >= 0; k--) {
+            row_add_scaled(m_rref, k, i, -MAT(m_rref, k, pivot_col));
+        }
+    }
+
+    free(pivot_cols);
+    return m_rref;    
+}
+
+double matrix_det(const Matrix *m) {
+    if (m == NULL) {
+        fprintf(stderr, "matrix_det: passed NULL\n");
+        return 0.0;
+    }
+
+    if (!matrix_is_square(m)) {
+        fprintf(stderr, "matrix_det: matrix is not square\n");
+        return 0.0;
+    }
+
+    // 2x2 matrix shortcut
+    if (m->rows == 2) {
+        return det_2x2(m);
+    }
+
+
+    Matrix* m_det = matrix_copy(m);
+    if (m_det == NULL) return 0.0;
+
+    int pivot_row, row, col;
+    int swaps = 0;
+    double pivot_val;
+
+    for (col = 0, row = 0; col < m_det->cols && row < m_det->rows; col++) {
+        // Finding pivot, otherwise assume it's in current row
+        pivot_row = row;
+        pivot_val = 0.0;
+
+        for (int i = row; i < m_det->rows; i++) {
+            if (fabs(MAT(m_det, i, col)) > fabs(pivot_val)) {
+                pivot_val = MAT(m_det, i, col);
+                pivot_row = i;
+            }
+        }
+
+        if(fabs(pivot_val) < EPSILON) continue;
+
+        if (pivot_row != row) {
+            row_swap(m_det, row, pivot_row);
+            swaps++; // Keeping track of swaps for (-1)^(swaps)
+        }
+
+        // Gaussian elimination
+        for (int i = row + 1; i < m_det->rows; i++) {
+            // Have to divide by value in pivot spot in scale because they are not scaled to 1
+            row_add_scaled(m_det, i, row, -MAT(m_det, i, col) / MAT(m_det, row, col));
+        }
+
+        row++;
+    }
+
+    double diag_prod = 1; // Product of diagonal product of echelon matrix
+    for (int i = 0; i < m_det->rows; i++) {
+        diag_prod *= MAT(m_det, i, i);
+    }
+
+    matrix_free(m_det);
+
+    return diag_prod * (swaps % 2 == 0 ? 1 : -1);
 }

@@ -52,4 +52,23 @@ Matrix* matrix_multiply(const Matrix *m1, const Matrix *m2);
 // Returns NULL on failure.
 Matrix* matrix_identity(int n);
 
+// Checks if the given matrix is square.
+// Returns 1 for yes and 0 for no.
+// Returns 0 when passed NULL.
+int matrix_is_square(const Matrix *m);
+
+// Returns sum of the diagonal elements.
+// Checks if matrix is square, returns 0 if not.
+// Returns 0 when passed NULL.
+double matrix_trace(const Matrix *m);
+
+// Finds RREF of the given matrix.
+// Returns NULL when passed NULL.
+Matrix* matrix_rref(const Matrix *m);
+
+// Finds the determinant of the given matrix.
+// Checks whether matrix is square.
+// Returns 0.0 when passed NULL or non-square.
+double matrix_det(const Matrix *m);
+
 #endif
