@@ -52,22 +52,21 @@ Matrix* matrix_create(int rows, int cols) {
         return NULL;
     }
 
-    Matrix *m = (Matrix*)malloc(sizeof(Matrix));
+    Matrix *m = malloc(sizeof(*m));
     if (m == NULL) {
         fprintf(stderr, "matrix_create: memory allocation failed\n");
         return NULL;
     }
 
-    double *m_data = calloc((size_t)rows * cols, sizeof(*m_data));
-    if (m_data == NULL) {
+    m->rows = rows;
+    m->cols = cols;
+    m->data = calloc((size_t)rows * cols, sizeof(*(m->data)));
+
+    if (m->data == NULL) {
         fprintf(stderr, "matrix_create: memory allocation failed\n");
         free(m);
         return NULL;
     }
-
-    m->rows = rows;
-    m->cols = cols;
-    m->data = m_data;
 
     return m;
 }
